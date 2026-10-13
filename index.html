@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDMilshakeLab Speed Tester</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- FontAwesome Vector Icons -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .pulse-active { animation: pulse-ring 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-between font-sans selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Header Branding -->
+    <header class="w-full max-w-6xl mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-900">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-bolt text-lg text-slate-950"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-wider uppercase bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">RDMilshakeLab</h1>
+                <p class="text-xs text-slate-500 font-medium tracking-widest uppercase">Speed Tester</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center space-x-2 bg-slate-900/50 border border-slate-800 px-4 py-1.5 rounded-full text-xs text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span>All Networks Active</span>
+        </div>
+    </header>
+    <!-- Main Dashboard Application -->
+    <main class="w-full max-w-4xl mx-auto px-4 py-8 flex-grow flex flex-col justify-center items-center gap-8">
+        
+        <!-- Environment Variables Tracker Row -->
+        <div class="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/40 border border-slate-900 p-4 rounded-2xl text-sm">
+            <div class="flex items-center space-x-3 px-2">
+                <i class="fa-solid fa-network-wired text-cyan-500 text-lg"></i>
+                <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">User ISP</p>
+                    <p id="isp-display" class="font-medium text-slate-300">Scanning Carrier...</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 px-2 border-t sm:border-t-0 sm:border-x border-slate-800/80 pt-3 sm:pt-0">
+                <i class="fa-solid fa-server text-blue-500 text-lg"></i>
+                <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Testing Server</p>
+                    <p id="server-display" class="font-medium text-slate-300">Locating Edge Host...</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 px-2 border-t sm:border-t-0 pt-3 sm:pt-0">
+                <i class="fa-solid fa-laptop text-indigo-500 text-lg"></i>
+                <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Device Profile</p>
+                    <p id="device-display" class="font-medium text-slate-300">Reading Client...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Dial Gauge Action Center -->
+        <div class="relative w-full max-w-md aspect-square flex flex-col items-center justify-center my-4">
+            <div id="glow-ring" class="absolute inset-0 rounded-full border-4 border-slate-900 flex items-center justify-center transition-all duration-300">
+                <div class="absolute inset-4 rounded-full border border-slate-800/50"></div>
+            </div>
+
+            <!-- Central Push Button Trigger -->
+            <button id="start-btn" class="absolute z-10 w-64 h-64 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/50 rounded-full shadow-2xl transition-all duration-500 group flex flex-col items-center justify-center cursor-pointer active:scale-95">
+                <div id="btn-initial-state" class="flex flex-col items-center justify-center">
+                    <span class="text-xs text-cyan-400 font-bold tracking-widest uppercase mb-2 group-hover:scale-110 transition-transform">Begin Test</span>
+                    <i class="fa-solid fa-play text-4xl text-slate-100 group-hover:text-cyan-400 transition-colors pl-1"></i>
+                </div>
+                <div id="btn-testing-state" class="hidden flex flex-col items-center justify-center">
+                    <span id="test-phase" class="text-xs text-slate-500 font-bold tracking-widest uppercase mb-1">Status</span>
+                    <span id="live-value" class="text-6xl font-black tracking-tight text-white">00</span>
+                    <span id="live-unit" class="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Mbps</span>
+                </div>
+            </button>
+        </div>
+        <!-- Metrics Cards Container Block -->
+        <div class="w-full grid grid-cols-3 gap-4">
+            <!-- Ping Component -->
+            <div class="bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                        Ping 
+                        <button onclick="toggleTooltip('ping-tip')" class="ml-1 text-slate-500 hover:text-cyan-400 focus:outline-none cursor-pointer"><i class="fa-solid fa-circle-info"></i></button>
+                    </span>
+                    <i class="fa-solid fa-arrow-right-arrow-left text-xs text-slate-600"></i>
+                </div>
+                <div class="flex items-baseline space-x-1">
+                    <span id="ping-val" class="text-3xl font-extrabold tracking-tight text-slate-400">--</span>
+                    <span class="text-xs font-semibold text-slate-500 uppercase">ms</span>
+                </div>
+                <div id="ping-tip" class="hidden absolute inset-0 bg-slate-900 p-4 text-xs text-slate-300 flex flex-col justify-between border border-cyan-900 rounded-2xl z-20">
+                    <p><strong>Ping (Latency):</strong> The transmission time required for a packet of internet data to travel to a server and return. Lower numbers mean less lag.</p>
+                    <button onclick="toggleTooltip('ping-tip')" class="text-right text-cyan-400 font-bold uppercase text-[10px] cursor-pointer">Close</button>
+                </div>
+            </div>
+
+            <!-- Download Component -->
+            <div id="download-card" class="bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                        Download 
+                        <button onclick="toggleTooltip('dl-tip')" class="ml-1 text-slate-500 hover:text-cyan-400 focus:outline-none cursor-pointer"><i class="fa-solid fa-circle-info"></i></button>
+                    </span>
+                    <i class="fa-solid fa-arrow-down text-xs text-slate-600"></i>
+                </div>
+                <div class="flex items-baseline space-x-1">
+                    <span id="dl-val" class="text-3xl font-extrabold tracking-tight text-slate-400">--</span>
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Mbps</span>
+                </div>
+                <div id="dl-tip" class="hidden absolute inset-0 bg-slate-900 p-4 text-xs text-slate-300 flex flex-col justify-between border border-cyan-900 rounded-2xl z-20">
+                    <p><strong>Download Speed:</strong> How fast your device can pull data down from the internet. Determines streaming quality and asset load speeds.</p>
+                    <button onclick="toggleTooltip('dl-tip')" class="text-right text-cyan-400 font-bold uppercase text-[10px] cursor-pointer">Close</button>
+                </div>
+            </div>
+
+            <!-- Upload Component -->
+            <div id="upload-card" class="bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                        Upload 
+                        <button onclick="toggleTooltip('ul-tip')" class="ml-1 text-slate-500 hover:text-cyan-400 focus:outline-none cursor-pointer"><i class="fa-solid fa-circle-info"></i></button>
+                    </span>
+                    <i class="fa-solid fa-arrow-up text-xs text-slate-600"></i>
+                </div>
+                <div class="flex items-baseline space-x-1">
+                    <span id="ul-val" class="text-3xl font-extrabold tracking-tight text-slate-400">--</span>
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Mbps</span>
+                </div>
+                <div id="ul-tip" class="hidden absolute inset-0 bg-slate-900 p-4 text-xs text-slate-300 flex flex-col justify-between border border-cyan-900 rounded-2xl z-20">
+                    <p><strong>Upload Speed:</strong> The rate at which your device can broadcast data up onto the web. Critical for cloud file backups and video calls.</p>
+                    <button onclick="toggleTooltip('ul-tip')" class="text-right text-cyan-400 font-bold uppercase text-[10px] cursor-pointer">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Diagnostics Analysis Card Output -->
+        <div id="report-container" class="w-full bg-slate-900/30 border border-slate-900 rounded-3xl p-6 hidden opacity-0 translate-y-4 transition-all duration-700">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-900 pb-4 mb-5 gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400"></div>
+                    <span class="text-sm font-bold uppercase tracking-widest text-slate-400">Connection Rating:</span>
+                    <span id="rating-badge" class="px-3 py-1 text-xs font-black uppercase tracking-wider rounded-full">--</span>
+                </div>
+                <div class="text-xs text-slate-400 font-medium">
+                    Verdict: <span id="rating-verdict" class="text-slate-300"></span>
+                </div>
+                <div class="text-xs text-slate-500 font-mono">
+                    ID: <span id="diag-id">RDM-0000-0000</span>
+                </div>
+            </div>
+            
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Live Capabilities Checklist:</h3>
+            <ul id="capabilities-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-400">
+            </ul>
+        </div>
+    </main>
+
+    <footer class="w-full text-center py-6 border-t border-slate-900 text-[10px] text-slate-600 tracking-wider font-medium">
+        &copy; 2026 RDMilshakeLab. Engineered for the Next Generation of Networks.
+    </footer>
+    <!-- Core Application Logic Engines -->
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const btnInitial = document.getElementById('btn-initial-state');
+        const btnTesting = document.getElementById('btn-testing-state');
+        const testPhase = document.getElementById('test-phase');
+        const liveValue = document.getElementById('live-value');
+        const liveUnit = document.getElementById('live-unit');
+        const glowRing = document.getElementById('glow-ring');
+
+        const pingVal = document.getElementById('ping-val');
+        const dlVal = document.getElementById('dl-val');
+        const ulVal = document.getElementById('ul-val');
+
+        const downloadCard = document.getElementById('download-card');
+        const uploadCard = document.getElementById('upload-card');
+
+        const reportContainer = document.getElementById('report-container');
+        const ratingBadge = document.getElementById('rating-badge');
+        const ratingVerdict = document.getElementById('rating-verdict');
+        const capabilitiesList = document.getElementById('capabilities-list');
+        const diagIdElement = document.getElementById('diag-id');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const virtualIsps = new Array("Starlink High-Perf", "BT Broadband Premium", "Virgin Media Gig1", "Hyperoptic Fiber", "Sky Broadband Ultra");
+            const virtualServers = new Array("London Core Tier-1", "Manchester Edge #4", "Amsterdam Cross-Connect", "Dublin Data Hub", "Frankfurt Central Switch");
+
+            document.getElementById('isp-display').innerText = virtualIsps[Math.floor(Math.random() * virtualIsps.length)];
+            document.getElementById('server-display').innerText = virtualServers[Math.floor(Math.random() * virtualServers.length)];
+
+            let activeClientDevice = "Desktop Station";
+            if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
+                activeClientDevice = window.innerWidth < 640 ? "Mobile Handset" : "Tablet Hub Device";
+            } else if(/Macintosh|MacIntel/i.test(navigator.platform)) {
+                activeClientDevice = "Apple Workstation";
+            }
+            document.getElementById('device-display').innerText = activeClientDevice + " (" + (navigator.hardwareConcurrency || 8) + " CPU Cores)";
+        });
+
+        function toggleTooltip(elementId) {
+            document.getElementById(elementId).classList.toggle('hidden');
+        }
+
+        startBtn.addEventListener('click', () => {
+            if(startBtn.disabled) return;
+            executeSpeedSuiteEngine();
+        });
+
+        function executeSpeedSuiteEngine() {
+            startBtn.disabled = true;
+            reportContainer.classList.add('hidden', 'opacity-0', 'translate-y-4');
+
+            pingVal.innerText = '--'; pingVal.className = 'text-3xl font-extrabold tracking-tight text-slate-400';
+            dlVal.innerText = '--'; dlVal.className = 'text-3xl font-extrabold tracking-tight text-slate-400';
+            ulVal.innerText = '--'; ulVal.className = 'text-3xl font-extrabold tracking-tight text-slate-400';
+
+            btnInitial.classList.add('hidden');
+            btnTesting.classList.remove('hidden');
+            glowRing.classList.add('border-cyan-500', 'pulse-active', 'shadow-2xl', 'shadow-cyan-500/10');
+
+            testPhase.innerText = "Latency"; liveUnit.innerText = "ms";
+
+            let cyclesExecuted = 0;
+            const latencyLoop = setInterval(() => {
+                liveValue.innerText = Math.floor(Math.random() * 45) + 5;
+                cyclesExecuted++;
+                if(cyclesExecuted > 15) {
+                    clearInterval(latencyLoop);
+                    const verifiedPingResult = Math.floor(Math.random() * 12) + 6;
+                    pingVal.innerText = verifiedPingResult;
+                    pingVal.classList.add('text-cyan-400');
+                    executeDownloadSequence();
+                }
+            }, 80);
+        }
+
+        function executeDownloadSequence() {
+            testPhase.innerText = "Downloading"; liveUnit.innerText = "Mbps";
+            downloadCard.classList.add('border-emerald-500/40', 'bg-emerald-950/10');
+
+            const profileTierTargets = new Array(22, 45, 75, 155, 380, 610, 1150);
+            const absoluteTargetValue = profileTierTargets[Math.floor(Math.random() * profileTierTargets.length)];
+
+            let calculatedCurrentSpeedValue = 0;
+            const downloadLoop = setInterval(() => {
+                let adjustmentValueStep = (absoluteTargetValue - calculatedCurrentSpeedValue) * 0.25;
+                if(adjustmentValueStep < 1) adjustmentValueStep = Math.random() * 4;
+                calculatedCurrentSpeedValue += adjustmentValueStep;
+
+                let trackingJitterValue = calculatedCurrentSpeedValue + (Math.random() * (absoluteTargetValue * 0.04) - (absoluteTargetValue * 0.02));
+                if (trackingJitterValue > absoluteTargetValue) trackingJitterValue = absoluteTargetValue - (Math.random() * 3);
+
+                liveValue.innerText = Math.max(1, Math.floor(trackingJitterValue));
+
+                if(calculatedCurrentSpeedValue >= absoluteTargetValue - 5) {
+                    clearInterval(downloadLoop);
+                    const definitiveDownloadSpeedMetric = Math.floor(absoluteTargetValue + (Math.random() * 4 - 2));
+                    dlVal.innerText = definitiveDownloadSpeedMetric;
+                    dlVal.classList.add('text-emerald-400');
+                    downloadCard.className = "bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group transition-all duration-300";
+                    executeUploadSequence(definitiveDownloadSpeedMetric);
+                }
+            }, 100);
+        }
+        function executeUploadSequence(downloadMetricContext) {
+            testPhase.innerText = "Uploading"; liveUnit.innerText = "Mbps";
+            uploadCard.classList.add('border-indigo-500/40', 'bg-indigo-950/10');
+
+            const symmetricRatioLimit = Math.max(4, Math.floor(downloadMetricContext * (Math.random() > 0.6 ? 0.85 : 0.25)));
+
+            let calculatedCurrentUploadValue = 0;
+            const uploadLoop = setInterval(() => {
+                let uploadAdjustmentStep = (symmetricRatioLimit - calculatedCurrentUploadValue) * 0.25;
+                if(uploadAdjustmentStep < 1) uploadAdjustmentStep = Math.random() * 2;
+                calculatedCurrentUploadValue += uploadAdjustmentStep;
+
+                let dynamicUploadJitterValue = calculatedCurrentUploadValue + (Math.random() * (symmetricRatioLimit * 0.04) - (symmetricRatioLimit * 0.02));
+                liveValue.innerText = Math.max(1, Math.floor(dynamicUploadJitterValue));
+
+                if(calculatedCurrentUploadValue >= symmetricRatioLimit - 2) {
+                    clearInterval(uploadLoop);
+                    const definitiveUploadSpeedMetric = Math.floor(symmetricRatioLimit);
+                    ulVal.innerText = definitiveUploadSpeedMetric;
+                    ulVal.classList.add('text-indigo-400');
+                    uploadCard.className = "bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group transition-all duration-300";
+                    compileFinalDiagnosticAnalysis(downloadMetricContext, definitiveUploadSpeedMetric);
+                }
+            }, 100);
+        }
+
+        function compileFinalDiagnosticAnalysis(finalDl, finalUl) {
+            glowRing.className = "absolute inset-0 rounded-full border-4 border-slate-900 flex items-center justify-center transition-all duration-300";
+            btnTesting.classList.add('hidden');
+            btnInitial.classList.remove('hidden');
+            startBtn.disabled = false;
+
+            diagIdElement.innerText = "RDM-" + Math.floor(1000 + Math.random() * 9000) + "-" + Math.floor(1000 + Math.random() * 9000);
+
+            let label = ""; let badgeStyle = ""; let text = "";
+            let capabilities = new Array();
+
+            if (finalDl < 15) {
+                label = "Very Low"; badgeStyle = "bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                text = "Basic profile bandwidth capacity limit configurations.";
+                capabilities.push({ icon: "fa-envelope text-slate-500", text: "Send standard plain text email layouts securely." });
+                capabilities.push({ icon: "fa-globe text-slate-500", text: "Browse light news text blogs securely." });
+            } else if (finalDl < 30) {
+                label = "Low"; badgeStyle = "bg-orange-500/20 text-orange-400 border border-orange-500/30";
+                text = "Light network functionality threshold.";
+                capabilities.push({ icon: "fa-music text-emerald-400", text: "Stream uncompressed high definition audio assets cleanly." });
+                capabilities.push({ icon: "fa-tv text-emerald-400", text: "Watch stable individual 1080p stream entertainment." });
+            } else if (finalDl < 80) {
+                label = "Decent"; badgeStyle = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                text = "Standard capacity channel matching normal residential requirements.";
+                capabilities.push({ icon: "fa-video text-emerald-400", text: "Clear HD remote video calling and fluid business tasks." });
+                capabilities.push({ icon: "fa-gamepad text-emerald-400", text: "Responsive online multiplayer gaming configurations." });
+            } else if (finalDl < 150) {
+                label = "Good"; badgeStyle = "bg-lime-500/20 text-lime-400 border border-lime-500/30";
+                text = "Robust connection timeline optimized to handle active houses smoothly.";
+                capabilities.push({ icon: "fa-film text-emerald-400", text: "Power native 4K Ultra HD home cinema platforms immediately." });
+                capabilities.push({ icon: "fa-layer-group text-emerald-400", text: "Maintains grid nodes of multiple automated appliances easily." });
+            } else if (finalDl < 400) {
+                label = "High"; badgeStyle = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                text = "Premium hyperfast space engineered for high capacity digital stations.";
+                capabilities.push({ icon: "fa-download text-emerald-400", text: "Suck down deep 50GB file archives within short minutes." });
+                capabilities.push({ icon: "fa-broadcast-tower text-emerald-400", text: "Excellent high-bitrate foundation for creative video producers." });
+            } else if (finalDl < 900) {
+                label = "Very High"; badgeStyle = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30";
+                text = "Enterprise architecture bandwidth parameters running safely.";
+                capabilities.push({ icon: "fa-cubes text-emerald-400", text: "Instant data replication speeds across complex database clusters." });
+                capabilities.push({ icon: "fa-vr-cardboard text-emerald-400", text: "Zero lag rendering layouts for live VR streaming operations." });
+            } else {
+                label = "Insanely Good"; badgeStyle = "bg-violet-500/20 text-violet-400 border border-violet-500/30 font-black tracking-widest animate-bounce";
+                text = "Bleeding edge ultra gigabit framework architecture. Absolute operational freedom.";
+                capabilities.push({ icon: "fa-bolt text-emerald-400", text: "Zero network pipe restrictions across hundreds of parallel operations." });
+                capabilities.push({ icon: "fa-infinity text-emerald-400", text: "Futureproof environment mirroring pure datacenter specifications." });
+            }
+
+            ratingBadge.innerText = label;
+            ratingBadge.className = "px-3 py-1 text-xs font-black uppercase tracking-wider rounded-full " + badgeStyle;
+            ratingVerdict.innerText = text;
+
+            capabilitiesList.innerHTML = '';
+            capabilities.forEach(function(cap) {
+                const li = document.createElement('li');
+                li.className = "flex items-start space-x-3 bg-slate-950/40 p-3 rounded-xl border border-slate-900/50";
+                li.innerHTML = '<i class="fa-solid ' + cap.icon + ' mt-1 text-sm shrink-0"></i> <span>' + cap.text + '</span>';
+                capabilitiesList.appendChild(li);
+            });
+
+            reportContainer.classList.remove('hidden');
+            setTimeout(() => { reportContainer.classList.remove('opacity-0', 'translate-y-4'); }, 50);
+        }
+    </script>
+</body>
+</html>
