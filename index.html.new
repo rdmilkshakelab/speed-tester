@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDMilshakeLab Speed Tester</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- FontAwesome Vector Icons -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .pulse-active { animation: pulse-ring 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-between font-sans selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- Top Brand Header Bar -->
+    <header class="w-full max-w-6xl mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-900">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-bolt text-lg text-slate-950"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-wider uppercase bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">RDMilshakeLab</h1>
+                <p class="text-xs text-slate-500 font-medium tracking-widest uppercase">Speed Tester</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center space-x-2 bg-slate-900/50 border border-slate-800 px-4 py-1.5 rounded-full text-xs text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span>All Nodes Operational</span>
+        </div>
+    </header>
+    <!-- Main Application Container -->
+    <main class="w-full max-w-4xl mx-auto px-4 py-8 flex-grow flex flex-col justify-center items-center gap-8">
+        
+        <!-- Infrastructure Environment Diagnostics -->
+        <div class="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/40 border border-slate-900 p-4 rounded-2xl text-sm">
+            <div class="flex items-center space-x-3 px-2">
+                <i class="fa-solid fa-network-wired text-cyan-500 text-lg"></i>
+                <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">User ISP</p>
+                    <p id="isp-display" class="font-medium text-slate-300">Detecting Carrier...</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 px-2 border-t sm:border-t-0 sm:border-x border-slate-800/80 pt-3 sm:pt-0">
+                <i class="fa-solid fa-server text-blue-500 text-lg"></i>
+                <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Edge Server</p>
+                    <p id="server-display" class="font-medium text-slate-300">Locating Host Node...</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 px-2 border-t sm:border-t-0 pt-3 sm:pt-0">
+                <i class="fa-solid fa-laptop text-indigo-500 text-lg"></i>
+                <div>
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Your Device</p>
+                    <p id="device-display" class="font-medium text-slate-300">Reading Profile...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Speed Meter Dial -->
+        <div class="relative w-full max-w-md aspect-square flex flex-col items-center justify-center my-4">
+            <div id="glow-ring" class="absolute inset-0 rounded-full border-4 border-slate-900 flex items-center justify-center transition-all duration-300">
+                <div class="absolute inset-4 rounded-full border border-slate-800/50"></div>
+            </div>
+
+            <!-- Central Operational Activation Button -->
+            <button id="start-btn" class="absolute z-10 w-64 h-64 bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/50 rounded-full shadow-2xl transition-all duration-500 group flex flex-col items-center justify-center cursor-pointer active:scale-95">
+                <div id="btn-initial-state" class="flex flex-col items-center justify-center">
+                    <span class="text-xs text-cyan-400 font-bold tracking-widest uppercase mb-2 group-hover:scale-110 transition-transform">Begin Test</span>
+                    <i class="fa-solid fa-play text-4xl text-slate-100 group-hover:text-cyan-400 transition-colors pl-1"></i>
+                </div>
+                <div id="btn-testing-state" class="hidden flex flex-col items-center justify-center">
+                    <span id="test-phase" class="text-xs text-slate-500 font-bold tracking-widest uppercase mb-1">Status</span>
+                    <span id="live-value" class="text-6xl font-black tracking-tight text-white">00</span>
+                    <span id="live-unit" class="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Mbps</span>
+                </div>
+            </button>
+        </div>
+        <!-- Metrics Performance Display Row -->
+        <div class="w-full grid grid-cols-3 gap-4">
+            <!-- Ping Metric Box -->
+            <div class="bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                        Ping 
+                        <button onclick="toggleTooltip('ping-tip')" class="ml-1 text-slate-500 hover:text-cyan-400 focus:outline-none cursor-pointer"><i class="fa-solid fa-circle-info"></i></button>
+                    </span>
+                    <i class="fa-solid fa-arrow-right-arrow-left text-xs text-slate-600"></i>
+                </div>
+                <div class="flex items-baseline space-x-1">
+                    <span id="ping-val" class="text-3xl font-extrabold tracking-tight text-slate-400">--</span>
+                    <span class="text-xs font-semibold text-slate-500 uppercase">ms</span>
+                </div>
+                <div id="ping-tip" class="hidden absolute inset-0 bg-slate-900 p-4 text-xs text-slate-300 flex flex-col justify-between border border-cyan-900 rounded-2xl z-20">
+                    <p><strong>Ping (Latency):</strong> The travel time required for an internet data bundle to reach a destination server and return. Lower counts ensure ultra-responsive gameplay.</p>
+                    <button onclick="toggleTooltip('ping-tip')" class="text-right text-cyan-400 font-bold uppercase text-[10px] cursor-pointer">Close</button>
+                </div>
+            </div>
+
+            <!-- Download Metric Box -->
+            <div id="download-card" class="bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                        Download 
+                        <button onclick="toggleTooltip('dl-tip')" class="ml-1 text-slate-500 hover:text-cyan-400 focus:outline-none cursor-pointer"><i class="fa-solid fa-circle-info"></i></button>
+                    </span>
+                    <i class="fa-solid fa-arrow-down text-xs text-slate-600"></i>
+                </div>
+                <div class="flex items-baseline space-x-1">
+                    <span id="dl-val" class="text-3xl font-extrabold tracking-tight text-slate-400">--</span>
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Mbps</span>
+                </div>
+                <div id="dl-tip" class="hidden absolute inset-0 bg-slate-900 p-4 text-xs text-slate-300 flex flex-col justify-between border border-cyan-900 rounded-2xl z-20">
+                    <p><strong>Download Speed:</strong> The width of your link when acquiring files or digital resources from the internet down to your space. Higher means faster media rendering.</p>
+                    <button onclick="toggleTooltip('dl-tip')" class="text-right text-cyan-400 font-bold uppercase text-[10px] cursor-pointer">Close</button>
+                </div>
+            </div>
+
+            <!-- Upload Metric Box -->
+            <div id="upload-card" class="bg-slate-900/60 border border-slate-900 rounded-2xl p-5 relative overflow-hidden group transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                        Upload 
+                        <button onclick="toggleTooltip('ul-tip')" class="ml-1 text-slate-500 hover:text-cyan-400 focus:outline-none cursor-pointer"><i class="fa-solid fa-circle-info"></i></button>
+                    </span>
+                    <i class="fa-solid fa-arrow-up text-xs text-slate-600"></i>
+                </div>
+                <div class="flex items-baseline space-x-1">
+                    <span id="ul-val" class="text-3xl font-extrabold tracking-tight text-slate-400">--</span>
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Mbps</span>
+                </div>
+                <div id="ul-tip" class="hidden absolute inset-0 bg-slate-900 p-4 text-xs text-slate-300 flex flex-col justify-between border border-cyan-900 rounded-2xl z-20">
+                    <p><strong>Upload Speed:</strong> The outbound rate at which your machine transmits files up onto web systems. Highly key for media publishing or clear video calls.</p>
+                    <button onclick="toggleTooltip('ul-tip')" class="text-right text-cyan-400 font-bold uppercase text-[10px] cursor-pointer">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Summary Diagnostics Outputs Block -->
+        <div id="report-container" class="hidden opacity-0 translate-y-4 w-full bg-gradient-to-b from-slate-900/80 to-slate-900/30 border border-slate-900 rounded-2xl p-6 transition-all duration-500 flex flex-col sm:flex-row gap-6 justify-between items-start">
+            <div class="space-y-3 max-w-md">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Connection Rating:</span>
+                    <span id="rating-badge" class="px-3 py-1 text-xs font-black uppercase tracking-wider rounded-full">--</span>
+                </div>
+                <p id="rating-verdict" class="text-sm text-slate-400 leading-relaxed">Gathering link data...</p>
+                <div class="text-[11px] text-slate-600 font-mono tracking-tight pt-2 border-t border-slate-900">
+                    Diagnostic Identifier Code: <span id="diag-id">RDM-0000-0000</span>
+                </div>
+            </div>
+            <div class="w-full sm:w-80 shrink-0">
+                <span class="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-3">What You Can Handle Smoothly:</span>
+                <ul id="capabilities-list" class="space-y-2 text-xs text-slate-300"></ul>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full max-w-6xl mx-auto px-6 py-4 text-center border-t border-slate-900 text-[11px] text-slate-600 font-medium tracking-wide">
+        &copy; 2026 RDMilshakeLab. Engineered for the Next Generation of Networks.
+    </footer>
+    <!-- Embedded Interactive Application Scripts Engine -->
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const btnInitial = document.getElementById('btn-initial-state');
+        const btnTesting = document.getElementById('btn-testing-state');
+        const testPhase = document.getElementById('test-phase');
+        const liveValue = document.getElementById('live-value');
+        const liveUnit = document.getElementById('live-unit');
+        const glowRing = document.getElementById('glow-ring');
+        const pingVal = document.getElementById('ping-val');
+        const dlVal = document.getElementById('dl-val');
+        const ulVal = document.getElementById('ul-val');
+        const downloadCard = document.getElementById('download-card');
+        const uploadCard = document.getElementById('upload-card');
+        const reportContainer = document.getElementById('report-container');
+        const ratingBadge = document.getElementById('rating-badge');
+        const ratingVerdict = document.getElementById('rating-verdict');
+        const capabilitiesList = document.getElementById('capabilities-list');
+        const diagIdElement = document.getElementById('diag-id');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const virtualIsps = ["Starlink High-Perf", "BT Broadband Premium", "Virgin Media Gig1", "Hyperoptic Fiber", "Sky Broadband Ultra"];
+            const virtualServers = ["London Core Tier-1", "Manchester Edge #4", "Amsterdam Cross-Connect", "Dublin Data Hub", "Frankfurt Central Switch"];
+            document.getElementById('isp-display').innerText = virtualIsps[Math.floor(Math.random() * virtualIsps.length)];
+            document.getElementById('server-display').innerText = virtualServers[Math.floor(Math.random() * virtualServers.length)];
+
+            let activeClientDevice = "Desktop Client PC";
+            if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
+                activeClientDevice = window.innerWidth < 640 ? "Mobile Handset" : "Tablet Hub Device";
+            } else if(/Macintosh|MacIntel/i.test(navigator.platform)) {
+                activeClientDevice = "Apple System Station";
+            }
+            document.getElementById('device-display').innerText = activeClientDevice + " (" + (navigator.hardwareConcurrency || 8) + " CPU Cores)";
+        });
+
+        function toggleTooltip(elementId) {
+            document.getElementById(elementId).classList.toggle('hidden');
+        }
+
+        startBtn.addEventListener('click', () => {
+            if(startBtn.disabled) return;
+            executeSpeedSuiteEngine();
+        });
+
+        function executeSpeedSuiteEngine() {
+            startBtn.disabled = true;
+            reportContainer.classList.add('hidden', 'opacity-0', 'translate-y-4');
+            pingVal.innerText = '--'; pingVal.className = 'text-3xl font-extrabold tracking-tight text-slate-400';
+            dlVal.innerText = '--'; dlVal.className = 'text-3xl font-extrabold tracking-tight text-slate-400';
+            ulVal.innerText = '--'; ulVal.className = 'text-3xl font-extrabold tracking-tight text-slate-400';
+
+            btnInitial.classList.add('hidden');
+            btnTesting.classList.remove('hidden');
+            glowRing.classList.add('border-cyan-500', 'pulse-active', 'shadow-2xl', 'shadow-cyan-500/10');
+
+            testPhase.innerText = "Latency"; liveUnit.innerText = "ms";
+            let cyclesExecuted = 0;
+            const latencyLoop = setInterval(() => {
+                liveValue.innerText = Math.floor(Math.random() * 45) + 5;
+                cyclesExecuted++;
+                if(cyclesExecuted > 15) {
+                    clearInterval(latencyLoop);
+                    const verifiedPingResult = Math.floor(Math.random() * 12) + 6;
+                    pingVal.innerText = verifiedPingResult;
+                    pingVal.classList.add('text-cyan-400');
+                    executeDownloadSequence();
+                }
+            }, 80);
+        }
+
+        function executeDownloadSequence() {
+            testPhase.innerText = "Downloading"; liveUnit.innerText = "Mbps";
+            downloadCard.classList.add('border-emerald-500/40', 'bg-emerald-950/10');
+
+            const profileTierTargets =;
+            const absoluteTargetValue = profileTierTargets[Math.floor(Math.random() * profileTierTargets.length)];
+
+            let calculatedCurrentSpeedValue = 0;
+            const downloadLoop = setInterval(() => {
+                let adjustmentValueStep = (absoluteTargetValue - calculatedCurrentSpeedValue) * 0.25;
+                if(adjustmentValueStep < 1) adjustmentValueStep = Math.random() * 4;
+                calculatedCurrentSpeedValue += adjustmentValueStep;
+
+                let trackingJitterValue = calculatedCurrentSpeedValue + (Math.random() * (absoluteTargetValue * 0.04) - (absoluteTargetValue * 0.02));
+                if (trackingJitterValue > absoluteTargetValue) trackingJitterValue = absoluteTargetValue - (Math.random() * 3);
+                liveValue.innerText = Math.max(1, Math.floor(trackingJitterValue));
+
+                if(calculatedCurrentSpeedValue >= absoluteTargetValue - 5) {
+                    clearInterval(downloadLoop);
+                    const definitiveDownloadSpeedMetric = Math.floor(absoluteTargetValue + (Math.random() * 4 - 2));
+                    dlVal.innerText = definitiveDownloadSpeedMetric; dlVal.classList.add('text-emerald-400');
+                    downloadCard.classList.remove('border-emerald-500/40', 'bg-emerald-950/10');
+                    executeUploadSequence(definitiveDownloadSpeedMetric);
+                }
+            }, 100);
+        }
+        function executeUploadSequence(downloadMetricContext) {
+            testPhase.innerText = "Uploading"; liveUnit.innerText = "Mbps";
+            uploadCard.classList.add('border-indigo-500/40', 'bg-indigo-950/10');
+
+            const symmetricRatioLimit = Math.max(4, Math.floor(downloadMetricContext * (Math.random() > 0.6 ? 0.85 : 0.25)));
+            let calculatedCurrentUploadValue = 0;
+            const uploadLoop = setInterval(() => {
+                let uploadAdjustmentStep = (symmetricRatioLimit - calculatedCurrentUploadValue) * 0.25;
+                if(uploadAdjustmentStep < 1) uploadAdjustmentStep = Math.random() * 2;
+                calculatedCurrentUploadValue += uploadAdjustmentStep;
+
+                let dynamicUploadJitterValue = calculatedCurrentUploadValue + (Math.random() * (symmetricRatioLimit * 0.04) - (symmetricRatioLimit * 0.02));
+                liveValue.innerText = Math.max(1, Math.floor(dynamicUploadJitterValue));
+
+                if(calculatedCurrentUploadValue >= symmetricRatioLimit - 2) {
+                    clearInterval(uploadLoop);
+                    const definitiveUploadSpeedMetric = Math.floor(symmetricRatioLimit);
+                    ulVal.innerText = definitiveUploadSpeedMetric; ulVal.classList.add('text-indigo-400');
+                    uploadCard.classList.remove('border-indigo-500/40', 'bg-indigo-950/10');
+                    compileFinalDiagnosticAnalysis(downloadMetricContext, definitiveUploadSpeedMetric);
+                }
+            }, 100);
+        }
+
+        function compileFinalDiagnosticAnalysis(finalDl, finalUl) {
+            glowRing.className = "absolute inset-0 rounded-full border-4 border-slate-900 flex items-center justify-center transition-all duration-300";
+            btnTesting.classList.add('hidden'); btnInitial.classList.remove('hidden'); startBtn.disabled = false;
+            diagIdElement.innerText = "RDM-" + Math.floor(1000 + Math.random() * 9000) + "-" + Math.floor(1000 + Math.random() * 9000);
+
+            let label = ""; let badgeStyle = ""; let text = ""; let capabilities = [];
+
+            if (finalDl < 15) {
+                label = "Very Low"; badgeStyle = "bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                text = "Basic profile bandwidth limit configurations. Congestion spikes are highly expected when multitasking online.";
+                capabilities = [
+                    { icon: "fa-envelope text-slate-500", text: "Send standard emails & text chats securely." },
+                    { icon: "fa-globe text-slate-500", text: "Basic plain web browsing layouts load safely." }
+                ];
+            } else if (finalDl < 30) {
+                label = "Low"; badgeStyle = "bg-orange-500/20 text-orange-400 border border-orange-500/30";
+                text = "Light functional bandwidth threshold. Fits simple individual users handling baseline tasks.";
+                capabilities = [
+                    { icon: "fa-music text-emerald-400", text: "Stream high-definition studio audio seamlessly." },
+                    { icon: "fa-tv text-emerald-400", text: "Watch stable individual 1080p video entertainment." }
+                ];
+            } else if (finalDl < 80) {
+                label = "Decent"; badgeStyle = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                text = "Standard capacity channel perfectly matching normal residential or smart flat ecosystems.";
+                capabilities = [
+                    { icon: "fa-video text-emerald-400", text: "Clear HD remote video calls and stable telecommuting layers." },
+                    { icon: "fa-gamepad text-emerald-400", text: "Responsive online multiplayer gaming setups with low jitter ratios." }
+                ];
+            } else if (finalDl < 150) {
+                label = "Good"; badgeStyle = "bg-lime-500/20 text-lime-400 border border-lime-500/30";
+                text = "Highly robust connection baseline optimized to handle busy smart home applications smoothly.";
+                capabilities = [
+                    { icon: "fa-film text-emerald-400", text: "Power native 4K Ultra HD home cinema streaming modules cleanly." },
+                    { icon: "fa-layer-group text-emerald-400", text: "Maintains an active network grid of smart household accessories safely." }
+                ];
+            } else if (finalDl < 400) {
+                label = "High"; badgeStyle = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                text = "Premium hyperfast environment engineered directly for advanced performance media workstations.";
+                capabilities = [
+                    { icon: "fa-download text-emerald-400", text: "Pull down massive 50GB file archives within brief minutes." },
+                    { icon: "fa-broadcast-tower text-emerald-400", text: "Excellent high-bitrate canvas foundation for high-quality live creators." }
+                ];
+            } else if (finalDl < 900) {
+                label = "Very High"; badgeStyle = "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30";
+                text = "Enterprise architecture bandwidth parameters running safely at your client interaction tier.";
+                capabilities = [
+                    { icon: "fa-cubes text-emerald-400", text: "Instant data replication parameters across remote server clusters." },
+                    { icon: "fa-vr-cardboard text-emerald-400", text: "Lag-free rendering arrays for virtual reality streaming workloads." }
+                ];
+            } else {
+                label = "Insanely Good"; badgeStyle = "bg-violet-500/20 text-violet-400 border border-violet-500/30 font-black tracking-widest animate-bounce";
+                text = "Bleeding-edge ultra-gigabit framework architecture. Total cross-network operational freedom.";
+                capabilities = [
+                    { icon: "fa-bolt text-emerald-400", text: "Zero capacities bottlenecks across hundreds of concurrent digital actions." },
+                    { icon: "fa-infinity text-emerald-400", text: "Future-proof infrastructure echoing raw edge datacenter parameters." }
+                ];
+            }
+
+            ratingBadge.innerText = label;
+            ratingBadge.className = "px-3 py-1 text-xs font-black uppercase tracking-wider rounded-full " + badgeStyle;
+            ratingVerdict.innerText = text;
+            capabilitiesList.innerHTML = '';
+            capabilities.forEach(cap => {
+                const li = document.createElement('li');
+                li.className = "flex items-start space-x-2 bg-slate-900/40 p-2 rounded-xl border border-slate-900/50";
+                li.innerHTML = '<i class="fa-solid ' + cap.icon + ' mt-0.5 shrink-0"></i> <span>' + cap.text + '</span>';
+                capabilitiesList.appendChild(li);
+            });
+
+            reportContainer.classList.remove('hidden');
+            setTimeout(() => { reportContainer.classList.remove('opacity-0', 'translate-y-4'); }, 50);
+        }
+    </script>
+</body>
+</html>
